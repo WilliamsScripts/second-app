@@ -1,12 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { User } from "@supabase/supabase-js";
+import { LoadingSpinner } from "@/components/common/LoadingSpinner";
 
-export default function Dashboard() {
+function UserProfile({ user }: { user: User }) {
+  return (
+    <div className="bg-white rounded-xl shadow-lg p-6">
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">
+        Profile Information
+      </h2>
+      <div className="space-y-4">
+        <div>
+          <label className="text-sm font-medium text-gray-500">Email</label>
+          <p className="mt-1 text-lg text-gray-900">{user?.email}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-500">User ID</label>
+          <p className="mt-1 text-lg text-gray-900">{user?.id}</p>
+        </div>
+        <div>
+          <label className="text-sm font-medium text-gray-500">
+            Last Sign In
+          </label>
+          <p className="mt-1 text-lg text-gray-900">
+            {user?.last_sign_in_at
+              ? new Date(user.last_sign_in_at).toLocaleString()
+              : "N/A"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DashboardContent() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -25,13 +55,11 @@ export default function Dashboard() {
 
         const { user } = await response.json();
         setUser(user);
-        setLoading(false);
       } catch (error) {
         console.error("Error fetching user data:", error);
         setError(
           error instanceof Error ? error.message : "Failed to fetch user data"
         );
-        setLoading(false);
       }
     };
 
@@ -55,14 +83,6 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center">
@@ -71,6 +91,10 @@ export default function Dashboard() {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <LoadingSpinner fullScreen />;
   }
 
   return (
@@ -84,7 +108,7 @@ export default function Dashboard() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, {user?.email}</span>
+              <span className="text-gray-600">Welcome, {user.email}</span>
               <button
                 onClick={handleSignOut}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
@@ -98,35 +122,9 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Profile Information
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Email
-                </label>
-                <p className="mt-1 text-lg text-gray-900">{user?.email}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  User ID
-                </label>
-                <p className="mt-1 text-lg text-gray-900">{user?.id}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  Last Sign In
-                </label>
-                <p className="mt-1 text-lg text-gray-900">
-                  {user?.last_sign_in_at
-                    ? new Date(user.last_sign_in_at).toLocaleString()
-                    : "N/A"}
-                </p>
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={<LoadingSpinner />}>
+            <UserProfile user={user} />
+          </Suspense>
 
           <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">
@@ -154,5 +152,13 @@ export default function Dashboard() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<LoadingSpinner fullScreen />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
