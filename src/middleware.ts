@@ -68,6 +68,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - api/auth (auth API endpoints)
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/auth).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/auth|public).*)",
   ],
 };
